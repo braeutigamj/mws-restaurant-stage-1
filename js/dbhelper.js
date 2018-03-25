@@ -154,6 +154,17 @@ class DBHelper {
   }
 
   /**
+   * Restaurant srcset
+   */
+  static imageSrcsetForRestaurant(restaurant) {
+    let srcset = '';
+    [200, 300, 600].forEach(size => {
+      srcset += `/img/${size}/${restaurant.photograph} ${size}w,`;
+    });
+    return (srcset.slice(0, -1));
+  }
+
+  /**
    * Map marker for a restaurant.
    */
   static mapMarkerForRestaurant(restaurant, map) {

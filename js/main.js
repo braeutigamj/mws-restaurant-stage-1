@@ -1,9 +1,8 @@
-let restaurants,
-  neighborhoods,
-  cuisines
-var map
-var markers = []
-
+let restaurants;
+let neighborhoods;
+let cuisines;
+var map;
+var markers = [];
 /**
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
  */
@@ -106,6 +105,15 @@ updateRestaurants = () => {
   })
 }
 
+document.getElementById('neighborhoods-select')
+  .addEventListener('change', () => {
+    updateRestaurants();
+  });
+document.getElementById('cuisines-select')
+  .addEventListener('change', () => {
+    updateRestaurants();
+  });
+
 /**
  * Clear current restaurants, their HTML and remove their map markers.
  */
@@ -140,9 +148,10 @@ createRestaurantHTML = (restaurant) => {
 
   const image = document.createElement('img');
   image.className = 'restaurant-img';
+  image.alt = '';
   image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  image.srcset = DBHelper.imageSrcsetForRestaurant(restaurant);
   li.append(image);
-
   const name = document.createElement('h1');
   name.innerHTML = restaurant.name;
   li.append(name);
@@ -156,6 +165,7 @@ createRestaurantHTML = (restaurant) => {
   li.append(address);
 
   const more = document.createElement('a');
+  more.setAttribute('aria-label', restaurant.name);
   more.innerHTML = 'View Details';
   more.href = DBHelper.urlForRestaurant(restaurant);
   li.append(more)
