@@ -77,35 +77,41 @@ nav h1 a {
 }
 
 #breadcrumb {
-    padding: 10px 40px 16px;
-    list-style: none;
-    background-color: #eee;
-    font-size: 17px;
-    margin: 0;
+  text-align: left;
+  padding: 10px 40px 16px;
+  background-color: #eee;
+  font-size: 17px;
+  margin: 0;
+}
+
+#breadcrumb ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* Display list items side by side */
 #breadcrumb li {
-    display: inline;
+  display: inline;
 }
 
 /* Add a slash symbol (/) before/behind each list item */
 #breadcrumb li+li:before {
-    padding: 8px;
-    color: black;
-    content: "/\00a0";
+  padding: 8px;
+  color: black;
+  content: "/\00a0";
 }
 
 /* Add a color to all links inside the list */
 #breadcrumb li a {
-    color: #0275d8;
-    text-decoration: none;
+  color: #0275d8;
+  text-decoration: none;
 }
 
 /* Add a color on mouse-over */
 #breadcrumb li a:hover {
-    color: #01447e;
-    text-decoration: underline;
+  color: #01447e;
+  text-decoration: underline;
 }
 
 /* ====================== Main-Content ====================== */
@@ -135,7 +141,6 @@ nav h1 a {
     position: fixed !important;
     height: 100vh;
     width: 50vw;
-    z-index: -1;
   }
 }
 /* ====================== Restaurant Filtering ====================== */
@@ -189,7 +194,7 @@ nav h1 a {
   max-height: 250px;
 }
 
-#restaurants-list li h1 {
+#restaurants-list li h2 {
   color: #f18200;
   font-weight: normal;
   margin: 20px 10px 10px;
@@ -254,7 +259,7 @@ nav h1 a {
   width: 90%;
 }
 
-#reviews-container h2 {
+#reviews-container h3 {
   color: #f58500;
   font-size: 24pt;
   font-weight: 300;
