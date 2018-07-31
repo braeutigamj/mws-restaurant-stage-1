@@ -70,11 +70,210 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 1);
+/******/ 	return __webpack_require__(__webpack_require__.s = 0);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Restaurant", function() { return Restaurant; });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__dbManager__ = __webpack_require__(1);
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+
+var Restaurant = /** @class */ (function () {
+    function Restaurant() {
+        this.dbManager = new __WEBPACK_IMPORTED_MODULE_0__dbManager__["a" /* DBManager */]();
+        this.loadRestaurant();
+    }
+    Restaurant.prototype.loadRestaurant = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        id = parseInt(this.getParameterByName('id'), 10);
+                        if (!id) { // no id found in URL
+                            console.error('No restaurant id in URL');
+                            return [2 /*return*/];
+                        }
+                        _a = this;
+                        return [4 /*yield*/, this.dbManager.getRestaurantDetail(id)];
+                    case 1:
+                        _a.restaurant = _b.sent();
+                        addMarkersToMap([this.restaurant]);
+                        this.fillRestaurantHTML();
+                        this.fillBreadcrumb();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Restaurant.prototype.getParameterByName = function (name, url) {
+        if (!url)
+            url = location.href;
+        name = name.replace(/[\[\]]/g, '\\$&');
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"), results = regex.exec(url);
+        if (!results)
+            return null;
+        if (!results[2])
+            return '';
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    };
+    Restaurant.prototype.fillRestaurantHTML = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var name, address, image, cuisine;
+            return __generator(this, function (_a) {
+                name = document.getElementById('restaurant-name');
+                name.innerHTML = this.restaurant.name;
+                address = document.getElementById('restaurant-address');
+                address.innerHTML = this.restaurant.address;
+                image = document.getElementById('restaurant-img');
+                image.className = 'restaurant-img';
+                image.src = "/img/" + this.restaurant.photograph;
+                image.srcset = Restaurant.getRestaurantSrcset(this.restaurant.photograph);
+                image.alt = 'photograph of ' + this.restaurant.name;
+                cuisine = document.getElementById('restaurant-cuisine');
+                cuisine.innerHTML = this.restaurant.cuisine_type;
+                // fill operating hours
+                if (this.restaurant.operating_hours) {
+                    this.fillRestaurantHoursHTML();
+                }
+                // fill reviews
+                this.fillReviewsHTML();
+                return [2 /*return*/];
+            });
+        });
+    };
+    Restaurant.prototype.fillRestaurantHoursHTML = function () {
+        var hours = document.getElementById('restaurant-hours');
+        for (var key in this.restaurant.operating_hours) {
+            var row = document.createElement('tr');
+            var day = document.createElement('td');
+            day.innerHTML = key;
+            row.appendChild(day);
+            var time = document.createElement('td');
+            time.innerHTML = this.restaurant.operating_hours[key];
+            row.appendChild(time);
+            hours.appendChild(row);
+        }
+    };
+    Restaurant.prototype.fillReviewsHTML = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var container, title, reviews, noReviews, ul;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        container = document.getElementById('reviews-container');
+                        title = document.createElement('h3');
+                        title.setAttribute('tabindex', '0');
+                        title.innerHTML = 'Reviews';
+                        container.appendChild(title);
+                        return [4 /*yield*/, this.dbManager.getReviewsByRestaurantId(this.restaurant.id)];
+                    case 1:
+                        reviews = _a.sent();
+                        if (!reviews.length) {
+                            noReviews = document.createElement('p');
+                            noReviews.innerHTML = 'No reviews yet!';
+                            container.appendChild(noReviews);
+                            return [2 /*return*/];
+                        }
+                        ul = document.getElementById('reviews-list');
+                        reviews.forEach(function (review) {
+                            ul.appendChild(_this.createReviewHTML(review));
+                        });
+                        container.appendChild(ul);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Restaurant.prototype.createReviewHTML = function (review) {
+        var li = document.createElement('li');
+        var reviewHead = document.createElement('div');
+        reviewHead.classList.add('review-head');
+        var name = document.createElement('span');
+        name.classList.add('review-name');
+        name.innerHTML = review.name;
+        reviewHead.appendChild(name);
+        var date = document.createElement('span');
+        date.classList.add('review-date');
+        date.innerHTML = review.date;
+        reviewHead.appendChild(date);
+        li.appendChild(reviewHead);
+        var rating = document.createElement('p');
+        rating.classList.add('review-rating');
+        rating.innerHTML = "Rating: " + review.rating;
+        li.appendChild(rating);
+        var comments = document.createElement('p');
+        comments.innerHTML = review.comments;
+        li.appendChild(comments);
+        return li;
+    };
+    Restaurant.prototype.fillBreadcrumb = function () {
+        var breadcrumb = document.querySelector('#breadcrumb ul');
+        var li = document.createElement('li');
+        var currentPage = document.createElement('a');
+        currentPage.innerHTML = this.restaurant.name;
+        currentPage.setAttribute('aria-current', 'page');
+        currentPage.href = '#';
+        li.appendChild(currentPage);
+        breadcrumb.appendChild(li);
+    };
+    Restaurant.getRestaurantSrcset = function (image) {
+        var srcset = '';
+        [200, 300, 600].forEach(function (size) {
+            srcset += "/img/" + size + "/" + image + " " + size + "w,";
+        });
+        return (srcset.slice(0, -1));
+    };
+    Restaurant.urlForRestaurant = function (restaurant) {
+        return "./restaurant.html?id=" + restaurant.id;
+    };
+    return Restaurant;
+}());
+
+
+
+/***/ }),
+/* 1 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -307,173 +506,6 @@ var DBManager = /** @class */ (function () {
     };
     DBManager.DATABASE_URL = 'http://localhost:1337/restaurants';
     return DBManager;
-}());
-
-
-
-/***/ }),
-/* 1 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Main", function() { return Main; });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__dbManager__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__restaurant__ = __webpack_require__(3);
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-
-
-var Main = /** @class */ (function () {
-    function Main() {
-        this.dbManager = new __WEBPACK_IMPORTED_MODULE_0__dbManager__["a" /* DBManager */]();
-        this.fillNeighborhoodsHTML();
-        this.fillCuisinesHTML();
-        this.fillRestaurantsHTML();
-    }
-    Main.prototype.fillNeighborhoodsHTML = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var select;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        select = document.getElementById('neighborhoods-select');
-                        return [4 /*yield*/, this.dbManager.getAllNeighborhoods()];
-                    case 1:
-                        (_a.sent()).forEach(function (neighborhood) {
-                            var option = document.createElement('option');
-                            option.innerHTML = neighborhood;
-                            option.value = neighborhood;
-                            select.appendChild(option);
-                        });
-                        document.getElementById('neighborhoods-select')
-                            .addEventListener('change', function () {
-                            _this.fillRestaurantsHTML();
-                        });
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    Main.prototype.fillCuisinesHTML = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var select;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        select = document.getElementById('cuisines-select');
-                        select.setAttribute('aria-label', 'Select Cuisines');
-                        return [4 /*yield*/, this.dbManager.getAllCuisines()];
-                    case 1:
-                        (_a.sent()).forEach(function (cuisine) {
-                            var option = document.createElement('option');
-                            option.innerHTML = cuisine;
-                            option.value = cuisine;
-                            select.appendChild(option);
-                        });
-                        document.getElementById('cuisines-select')
-                            .addEventListener('change', function () {
-                            _this.fillRestaurantsHTML();
-                        });
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    Main.prototype.fillRestaurantsHTML = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var neighborhoodsSelect, neighborhood, cuisineSelect, cuisine, restaurants, ul;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        neighborhoodsSelect = document.getElementById('neighborhoods-select');
-                        neighborhood = neighborhoodsSelect.options[neighborhoodsSelect.selectedIndex].value;
-                        cuisineSelect = document.getElementById('cuisines-select');
-                        cuisine = cuisineSelect.options[cuisineSelect.selectedIndex].value;
-                        return [4 /*yield*/, this.dbManager.getRestaurantsDetails(neighborhood, cuisine)];
-                    case 1:
-                        restaurants = _a.sent();
-                        this.resetRestaurants();
-                        ul = document.getElementById('restaurants-list');
-                        restaurants.forEach(function (restaurant) {
-                            ul.appendChild(_this.createRestaurantHTML(restaurant));
-                        });
-                        addMarkersToMap(restaurants);
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    Main.prototype.resetRestaurants = function () {
-        var ul = document.getElementById('restaurants-list');
-        ul.innerHTML = '';
-        removeMarkersFromMap();
-    };
-    Main.prototype.createRestaurantHTML = function (restaurant) {
-        var li = (document.createElement('li'));
-        var image = document.createElement('img');
-        image.className = 'restaurant-img';
-        image.alt = 'photograph of ' + restaurant.name;
-        image.src = "/img/" + restaurant.photograph;
-        image.srcset = __WEBPACK_IMPORTED_MODULE_1__restaurant__["a" /* Restaurant */].getRestaurantSrcset(restaurant.photograph);
-        li.appendChild(image);
-        var name = document.createElement('h2');
-        name.innerHTML = restaurant.name;
-        name.setAttribute('tabindex', '0');
-        li.appendChild(name);
-        var neighborhood = document.createElement('p');
-        neighborhood.innerHTML = restaurant.neighborhood;
-        li.appendChild(neighborhood);
-        var address = document.createElement('p');
-        address.innerHTML = restaurant.address;
-        li.appendChild(address);
-        var more = document.createElement('a');
-        more.setAttribute('aria-label', restaurant.name);
-        more.innerHTML = 'View Details';
-        more.href = this.urlForRestaurant(restaurant);
-        li.appendChild(more);
-        return li;
-    };
-    Main.prototype.urlForRestaurant = function (restaurant) {
-        return __WEBPACK_IMPORTED_MODULE_1__restaurant__["a" /* Restaurant */].urlForRestaurant(restaurant);
-    };
-    return Main;
 }());
 
 
@@ -801,205 +833,7 @@ var Main = /** @class */ (function () {
 }());
 
 
-/***/ }),
-/* 3 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return Restaurant; });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__dbManager__ = __webpack_require__(0);
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-
-var Restaurant = /** @class */ (function () {
-    function Restaurant() {
-        this.dbManager = new __WEBPACK_IMPORTED_MODULE_0__dbManager__["a" /* DBManager */]();
-        this.loadRestaurant();
-    }
-    Restaurant.prototype.loadRestaurant = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var id, _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        id = parseInt(this.getParameterByName('id'), 10);
-                        if (!id) { // no id found in URL
-                            console.error('No restaurant id in URL');
-                            return [2 /*return*/];
-                        }
-                        _a = this;
-                        return [4 /*yield*/, this.dbManager.getRestaurantDetail(id)];
-                    case 1:
-                        _a.restaurant = _b.sent();
-                        addMarkersToMap([this.restaurant]);
-                        this.fillRestaurantHTML();
-                        this.fillBreadcrumb();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    Restaurant.prototype.getParameterByName = function (name, url) {
-        if (!url)
-            url = location.href;
-        name = name.replace(/[\[\]]/g, '\\$&');
-        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"), results = regex.exec(url);
-        if (!results)
-            return null;
-        if (!results[2])
-            return '';
-        return decodeURIComponent(results[2].replace(/\+/g, ' '));
-    };
-    Restaurant.prototype.fillRestaurantHTML = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var name, address, image, cuisine;
-            return __generator(this, function (_a) {
-                name = document.getElementById('restaurant-name');
-                name.innerHTML = this.restaurant.name;
-                address = document.getElementById('restaurant-address');
-                address.innerHTML = this.restaurant.address;
-                image = document.getElementById('restaurant-img');
-                image.className = 'restaurant-img';
-                image.src = "/img/" + this.restaurant.photograph;
-                image.srcset = Restaurant.getRestaurantSrcset(this.restaurant.photograph);
-                image.alt = 'photograph of ' + this.restaurant.name;
-                cuisine = document.getElementById('restaurant-cuisine');
-                cuisine.innerHTML = this.restaurant.cuisine_type;
-                // fill operating hours
-                if (this.restaurant.operating_hours) {
-                    this.fillRestaurantHoursHTML();
-                }
-                // fill reviews
-                this.fillReviewsHTML();
-                return [2 /*return*/];
-            });
-        });
-    };
-    Restaurant.prototype.fillRestaurantHoursHTML = function () {
-        var hours = document.getElementById('restaurant-hours');
-        for (var key in this.restaurant.operating_hours) {
-            var row = document.createElement('tr');
-            var day = document.createElement('td');
-            day.innerHTML = key;
-            row.appendChild(day);
-            var time = document.createElement('td');
-            time.innerHTML = this.restaurant.operating_hours[key];
-            row.appendChild(time);
-            hours.appendChild(row);
-        }
-    };
-    Restaurant.prototype.fillReviewsHTML = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var container, title, reviews, noReviews, ul;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        container = document.getElementById('reviews-container');
-                        title = document.createElement('h3');
-                        title.setAttribute('tabindex', '0');
-                        title.innerHTML = 'Reviews';
-                        container.appendChild(title);
-                        return [4 /*yield*/, this.dbManager.getReviewsByRestaurantId(this.restaurant.id)];
-                    case 1:
-                        reviews = _a.sent();
-                        if (!reviews.length) {
-                            noReviews = document.createElement('p');
-                            noReviews.innerHTML = 'No reviews yet!';
-                            container.appendChild(noReviews);
-                            return [2 /*return*/];
-                        }
-                        ul = document.getElementById('reviews-list');
-                        reviews.forEach(function (review) {
-                            ul.appendChild(_this.createReviewHTML(review));
-                        });
-                        container.appendChild(ul);
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    Restaurant.prototype.createReviewHTML = function (review) {
-        var li = document.createElement('li');
-        var reviewHead = document.createElement('div');
-        reviewHead.classList.add('review-head');
-        var name = document.createElement('span');
-        name.classList.add('review-name');
-        name.innerHTML = review.name;
-        reviewHead.appendChild(name);
-        var date = document.createElement('span');
-        date.classList.add('review-date');
-        date.innerHTML = review.date;
-        reviewHead.appendChild(date);
-        li.appendChild(reviewHead);
-        var rating = document.createElement('p');
-        rating.classList.add('review-rating');
-        rating.innerHTML = "Rating: " + review.rating;
-        li.appendChild(rating);
-        var comments = document.createElement('p');
-        comments.innerHTML = review.comments;
-        li.appendChild(comments);
-        return li;
-    };
-    Restaurant.prototype.fillBreadcrumb = function () {
-        var breadcrumb = document.querySelector('#breadcrumb ul');
-        var li = document.createElement('li');
-        var currentPage = document.createElement('a');
-        currentPage.innerHTML = this.restaurant.name;
-        currentPage.setAttribute('aria-current', 'page');
-        currentPage.href = '#';
-        li.appendChild(currentPage);
-        breadcrumb.appendChild(li);
-    };
-    Restaurant.getRestaurantSrcset = function (image) {
-        var srcset = '';
-        [200, 300, 600].forEach(function (size) {
-            srcset += "/img/" + size + "/" + image + " " + size + "w,";
-        });
-        return (srcset.slice(0, -1));
-    };
-    Restaurant.urlForRestaurant = function (restaurant) {
-        return "./restaurant.html?id=" + restaurant.id;
-    };
-    return Restaurant;
-}());
-
-
-
 /***/ })
 /******/ ]);
 });
-//# sourceMappingURL=main.js.map
+//# sourceMappingURL=restaurant.js.map

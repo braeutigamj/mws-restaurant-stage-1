@@ -48,7 +48,7 @@ h2 {
   background-color: #444;
   bottom: 0;
   position: sticky;
-  color: #aaa;
+  color: #fff;
   font-size: 8pt;
   letter-spacing: 1px;
   padding: 25px 0;
@@ -146,11 +146,12 @@ nav h1 a {
 /* ====================== Restaurant Filtering ====================== */
 .filter-options {
   width: 100%;
-  background-color: #3397DB;
+  background-color: #00416d;
   padding: 20px 0;
 }
 
 .filter-options h2 {
+  background-color: #00416d;
   color: white;
   font-size: 1rem;
   font-weight: normal;
@@ -320,4 +321,8 @@ nav h1 a {
 
 #restaurant-hours tr:nth-child(even) {
   background-color: #efc28d;
+}
+
+noscript {
+  font-size: x-large;
 }

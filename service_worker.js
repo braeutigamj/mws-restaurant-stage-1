@@ -37,9 +37,14 @@ self.addEventListener('fetch', event => {
         let responseToCache = response.clone();
         caches.open('restaurant_offline').then(cache => {
           cache.put(event.request, responseToCache);
-          console.log(cache);
+        })
+        .catch(e => {
+          console.error(e);
         });
         return response;
+      })
+      .catch(e => {
+        console.error(e);
       });
     })
   );

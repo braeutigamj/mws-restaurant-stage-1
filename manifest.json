@@ -1,0 +1,22 @@
+{
+  "name": "Restaurant Review",
+  "short_name": "Restaurant Review",
+  "lang": "en-US",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#333",
+  "icons": [
+    {
+      "src": "img/icon.png",
+      "type": "image/png",
+      "sizes": "355x193"
+    },
+    {
+      "src": "img/icon-512.png",
+      "type": "image/png",
+      "sizes": "943x513"
+    }
+  ],
+  "background_color": "#f3f3f3"
+}

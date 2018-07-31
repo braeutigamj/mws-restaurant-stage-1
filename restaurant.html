@@ -1,18 +1,69 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-  <!-- Normalize.css for better cross-browser consistency -->
+  <base href="/" />
   <link rel="stylesheet"
         src="//normalize-css.googlecode.com/svn/trunk/normalize.css" />
-  <!-- Main CSS file -->
-  <link rel="stylesheet" href="css/styles.css">
   <meta charset="utf-8">
   <meta name="keywords" content="Restaurant, Review, Restaurant Reviews">
-  <meta name="description" content="Restaurant Review App is a WebApp for Reviews of Restaurants">
+  <meta name="description"
+        content="Restaurant Review App is a WebApp for Reviews of Restaurants">
   <meta name="robots" content="index, follow">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="Restaurant Review">
+  <meta name="apple-mobile-web-app-title" content="Restaurant Review">
+  <meta name="theme-color" content="#333">
+  <meta name="msapplication-navbutton-color" content="#333">
+  <meta name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent">
+  <meta name="msapplication-starturl" content="/">
+  <link rel="manifest" href="manifest.json">
   <title>Restaurant Info</title>
+  <script src="service_worker.js"></script>
+  <script>
+    var restaurant;
+    var map;
+    var initMap = function () {
+      let loc = {
+        lat: 40.722216,
+        lng: -73.987501
+      };
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 12,
+        center: loc,
+        scrollwheel: false
+      });
+
+    };
+
+    var markers = [];
+    function addMarkersToMap(restaurants)
+    {
+      restaurants.forEach(restaurant => {
+        // Add marker to the map
+        const marker = mapMarkerForRestaurant(restaurant);
+        google.maps.event.addListener(marker, 'click', () => {
+          window.location.href = marker.url
+        });
+        markers.push(marker);
+      });
+    }
+
+    function mapMarkerForRestaurant(restaurant)
+    {
+      const marker = new google.maps.Marker({
+        position: restaurant.latlng,
+        title: restaurant.name,
+        url: Restaurant.Restaurant.urlForRestaurant(restaurant),
+        map: map,
+        animation: google.maps.Animation.DROP}
+      );
+      return marker;
+    }
+  </script>
+
 </head>
 
 <body class="inside">
@@ -32,6 +83,10 @@
     <!-- End nav -->
   </header>
   <!-- End header -->
+
+  <noscript>
+    For this Website it's required to enable JavaScript!
+  </noscript>
 
   <!-- Beginning main -->
   <main id="maincontent">
@@ -65,16 +120,30 @@
   </footer>
   <!-- End footer -->
 
-  <!-- Beginning scripts -->
-  <!-- Database helpers -->
-  <script src="js/dbhelper.js"></script>
-  <!-- Main javascript file -->
-  <script src="js/restaurant_info.js"></script>
   <!-- Google Maps -->
   <script async defer
           src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCyCpSQZd_ea7t_sDtZHLNyw5VFOp0lgxs&libraries=places&callback=initMap"></script>
   <!-- End scripts -->
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+      function loadRestaurant() {
 
+        var restaurantJS = document.createElement('script');
+        restaurantJS.onload = function() {
+          restaurant = new Restaurant.Restaurant();
+        };
+        restaurantJS.src = 'js/restaurant.js';
+        document.body.appendChild(restaurantJS);
+
+        var restaurantCSS = document.createElement('link');
+        restaurantCSS.href = 'css/styles.css';
+        restaurantCSS.type = 'text/css';
+        restaurantCSS.rel = 'stylesheet';
+        restaurantCSS.media = 'screen,pring';
+        document.getElementsByTagName('head')[0].appendChild(restaurantCSS);
+      }
+      loadRestaurant();
+    });
+  </script>
 </body>
-
 </html>
