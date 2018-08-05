@@ -1,0 +1,284 @@
+body,
+td,
+th,
+p {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10pt;
+  color: #333;
+}
+
+body {
+  background-color: #fdfdfd;
+  margin: 0;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+ul,
+li {
+  color: #333;
+}
+
+a {
+  color: orange;
+  text-decoration: none;
+}
+
+a:hover,
+a:focus {
+  color: #3397db;
+  text-decoration: none;
+}
+
+a img{
+  border: none 0px #fff;
+}
+
+h1,
+h2 {
+  margin: 0 0 20px;
+}
+
+#footer {
+  background-color: #444;
+  bottom: 0;
+  position: sticky;
+  color: #fff;
+  font-size: 8pt;
+  letter-spacing: 1px;
+  padding: 25px 0;
+  text-align: center;
+  text-transform: uppercase;
+  width: 100%;
+}
+
+/* ====================== Navigation ====================== */
+nav {
+  background-color: #252831;
+  text-align: center;
+  padding: 20px 0;
+}
+
+nav h1 {
+  margin: auto;
+}
+
+nav h1 a {
+  color: #fff;
+  font-size: 14pt;
+  font-weight: 200;
+  letter-spacing: 10px;
+  text-transform: uppercase;
+}
+
+#breadcrumb {
+  text-align: left;
+  padding: 10px 40px 16px;
+  background-color: #eee;
+  font-size: 17px;
+  margin: 0;
+}
+
+#breadcrumb ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Display list items side by side */
+#breadcrumb li {
+  display: inline;
+}
+
+/* Add a slash symbol (/) before/behind each list item */
+#breadcrumb li+li:before {
+  padding: 8px;
+  color: black;
+  content: "/\00a0";
+}
+
+/* Add a color to all links inside the list */
+#breadcrumb li a {
+  color: blue;
+  text-decoration: none;
+}
+
+/* Add a color on mouse-over */
+#breadcrumb li a:hover {
+  color: blue;
+  text-decoration: underline;
+}
+
+/* ====================== Main-Content ====================== */
+
+@media screen and (min-width: 1024px) {
+  #maincontent {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "a b";
+  }
+}
+
+
+/* ====================== Map ====================== */
+#map {
+  height: 300px;
+  width: 100%;
+  background-color: #ccc;
+}
+
+@media screen and (min-width: 1024px) {
+  #map-container {
+    grid-area: b;
+  }
+
+  #map {
+    position: fixed !important;
+    height: 100vh;
+    width: 50vw;
+  }
+}
+
+/* ====================== Restaurant Details ====================== */
+
+#restaurant-name {
+  color: #f18200;
+  font-size: 20pt;
+  font-weight: 200;
+  margin: 15px 0 30px;
+  text-transform: uppercase;
+  line-height: 1.1em;
+}
+
+#restaurant-img {
+  max-width: 100%;
+  border-radius: 20px 0;
+  max-height: 400px;
+  display: block;
+  margin: 0 auto 20px;
+}
+
+#restaurant-address {
+  font-size: 12pt;
+  margin: 10px 0px;
+}
+
+#restaurant-cuisine {
+  background-color: #333;
+  color: #ddd;
+  font-size: 12pt;
+  font-weight: 300;
+  letter-spacing: 10px;
+  margin: 0 0 20px;
+  padding: 2px 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+#restaurant-container, #reviews-container {
+  border-bottom: 1px solid #d9d9d9;
+  margin: 0 auto;
+  width: 90%;
+}
+
+#reviews-container h3 {
+  color: #f58500;
+  font-size: 24pt;
+  font-weight: 300;
+  letter-spacing: -1px;
+  padding-bottom: 1pt;
+}
+
+#reviews-list {
+  margin: 0;
+  padding: 0;
+}
+
+#reviews-list li {
+  background-color: #fff;
+  display: block;
+  list-style-type: none;
+  margin: 0 0 30px;
+  overflow: hidden;
+  position: relative;
+}
+
+.review-head {
+  background-color: #333;
+  border-radius: 20px 0 0;
+  color: white;
+  padding: 10px;
+  display: flex;
+  margin: 0 0 8px;
+  justify-content: space-between;
+}
+
+.review-name {
+  font-size: 14pt;
+}
+
+#reviews-list li p {
+  margin: 8px 8px;
+}
+
+.review-rating {
+  background-color: orange;
+  color: white;
+  padding: 5px;
+  font-size: 14pt;
+  display: inline-block;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+#restaurant-hours {
+  border-collapse: collapse;
+  width: 100%;
+
+}
+#restaurant-hours tr {
+  color: #666;
+}
+
+#restaurant-hours tr:nth-child(even) {
+  background-color: #efc28d;
+}
+
+noscript {
+  font-size: x-large;
+}
+
+#offlinewarning {
+  text-align: center;
+  background-color: red;
+  font-size: 2em;
+  color: white;
+  padding: 10px;
+  position: sticky;
+  z-index: 1001;
+  top: 0;
+  display: none;
+}
+
+.form_review {
+  width: 100%;
+  display: grid;
+}
+
+.form_review label {
+  font-size: 12pt;
+}
+
+.form_review input, select, textarea {
+  font-size: 14px;
+  padding: 5px;
+  margin: 14px 0;
+}
+
+.form_review textarea {
+  min-height: 70px;
+}

@@ -19,8 +19,11 @@ export interface OperatingHours {
 
 export interface Review {
   [key:string]: any
+  id: number,
+  restaurant_id: number,
   name: string,
-  date: string,
+  createdAt: number,
+  updatedAt: number,
   rating: number,
   comments: string,
 }
@@ -124,11 +127,33 @@ export class Restaurant
   private async fillReviewsHTML(): Promise<void>
   {
     const container = document.getElementById('reviews-container');
+    container.innerHTML = '';
     const title = document.createElement('h3');
     title.setAttribute('tabindex', '0');
     title.innerHTML = 'Reviews';
     container.appendChild(title);
-
+    const form = document.createElement('div');
+    form.innerHTML =`
+      <div class="form_review">
+          <label for="form_name">Your Name:</label>
+          <input type="text" id="form_name" />
+          <label for="form_rating">Your Rating:</label>
+          <select id="form_rating">
+            <option value="1">1 Star</option>
+            <option value="2">2 Stars</option>
+            <option value="3">3 Stars</option>
+            <option value="4">4 Stars</option>
+            <option value="5">5 Stars</option>
+          </select>
+          <label for="form_review">Your Message:</label>
+          <textarea id="form_review"></textarea>
+          <input type="submit" value="Send Review" id="form_submit"
+                 aria-label="Send Review" />
+      </div>
+    `;
+    container.appendChild(form);
+    document.getElementById('form_submit')
+        .addEventListener('click', this.formSubmit.bind(this));
     const reviews =
         await this.dbManager.getReviewsByRestaurantId(this.restaurant.id);
     if (!reviews.length) {
@@ -137,11 +162,25 @@ export class Restaurant
       container.appendChild(noReviews);
       return;
     }
-    const ul = document.getElementById('reviews-list');
+    const ul = document.createElement('ul');
+    ul.setAttribute('id', 'reviews-list');
     reviews.forEach(review => {
       ul.appendChild(this.createReviewHTML(review));
     });
     container.appendChild(ul);
+  }
+
+  private formSubmit(event): void
+  {
+    this.dbManager.addReviewByRestaurant(
+        this.restaurant.id,
+        (<any>document.getElementById('form_name')).value,
+        parseInt((<any>document.getElementById('form_rating')).value, 10),
+        (<any>document.getElementById('form_review')).value);
+    (<any>document.getElementById('form_name')).value = '';
+    (<any>document.getElementById('form_rating')).value = '';
+    (<any>document.getElementById('form_review')).value = '';
+    this.fillReviewsHTML();
   }
 
   private createReviewHTML(review: Review): HTMLElement
@@ -157,7 +196,7 @@ export class Restaurant
 
     const date = document.createElement('span');
     date.classList.add('review-date');
-    date.innerHTML = review.date;
+    date.innerHTML = (new Date(review.updatedAt)).toString();
     reviewHead.appendChild(date);
 
     li.appendChild(reviewHead);

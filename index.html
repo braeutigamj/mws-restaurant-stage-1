@@ -21,7 +21,6 @@
   <meta name="msapplication-starturl" content="/">
   <link rel="manifest" href="manifest.json">
   <title>Restaurant Reviews</title>
-  <script src="service_worker.js"></script>
   <script>
     var main;
     var map;
@@ -70,9 +69,15 @@
       });
       markers = [];
     }
+
   </script>
 </head>
-<body>
+<body
+    ononline="document.getElementById('offlinewarning').style.display='none'"
+    onoffline="document.getElementById('offlinewarning').style.display='block'">
+  <div id="offlinewarning">
+    You're offline! You're reviews will be safed, if you're online again!
+  </div>
   <header>
     <nav>
       <h1><a href="/">Restaurant Reviews</a></h1>
@@ -111,23 +116,31 @@
   </footer>
   <script>
     document.addEventListener('DOMContentLoaded', (event) => {
-      function loadMain() {
+      function loadServiceWorker() {
+        var serviceJS = document.createElement('script');
+        serviceJS.onload = function() {
+          loadMain();
+        };
+        serviceJS.src = 'service_worker.js';
+        document.body.appendChild(serviceJS);
+      }
 
+      function loadMain() {
         var mainJS = document.createElement('script');
         mainJS.onload = function() {
-        main = new Restaurant.Main();
+          main = new Restaurant.Main();
         };
-        mainJS.src = 'js/main.js';
+        mainJS.src = 'js/main-min.js';
         document.body.appendChild(mainJS);
 
         var mainCSS = document.createElement('link');
-        mainCSS.href = 'css/styles.css';
+        mainCSS.href = 'css/main.css';
         mainCSS.type = 'text/css';
         mainCSS.rel = 'stylesheet';
         mainCSS.media = 'screen,pring';
         document.getElementsByTagName('head')[0].appendChild(mainCSS);
       }
-      loadMain();
+      loadServiceWorker();
     });
   </script>
 </body>

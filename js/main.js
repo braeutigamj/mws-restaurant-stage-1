@@ -117,11 +117,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 
-// TODO: remove any
 var DBManager = /** @class */ (function () {
     function DBManager() {
         this.refreshDB();
-        this.dbPromise = __WEBPACK_IMPORTED_MODULE_0__idb__["open"]('restaurantApp', 1, this.updateDBStructure);
+        this.dbPromise = __WEBPACK_IMPORTED_MODULE_0__idb__["open"]('restaurantApp', 2, this.updateDBStructure);
+        this.retryPendingReviewRequests();
     }
     DBManager.prototype.refreshDB = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -134,21 +134,39 @@ var DBManager = /** @class */ (function () {
                             _this.dbPromise.then(function (db) {
                                 var dbRestaurant = db.transaction('restaurant', 'readwrite')
                                     .objectStore('restaurant');
-                                var reviews = [];
-                                restaurant['reviews'].forEach(function (review) {
-                                    review['restaurantId'] = restaurant['id'];
-                                    reviews.push(review);
+                                _this.fetchReviewsByRestaurant(restaurant['id']).then(function (reviews) {
+                                    if (reviews) {
+                                        _this.clearDB('review', restaurant['id']);
+                                        reviews.forEach(function (review) {
+                                            review['restaurantId'] = restaurant['id'];
+                                            db.transaction('review', 'readwrite')
+                                                .objectStore('review')
+                                                .put(review);
+                                        });
+                                    }
                                 });
-                                delete restaurant['reviews'];
                                 dbRestaurant.put(restaurant);
-                                var dbReview = db.transaction('review', 'readwrite').objectStore('review');
-                                for (var i in reviews) {
-                                    dbReview.put(reviews[i]);
-                                }
                             });
                         });
                         return [2 /*return*/];
                 }
+            });
+        });
+    };
+    DBManager.prototype.clearDB = function (objectStoreName, restaurantId) {
+        this.dbPromise.then(function (db) {
+            var objectStore = db.transaction(objectStoreName, 'readwrite')
+                .objectStore(objectStoreName);
+            if (!restaurantId) {
+                objectStore.clear();
+                return;
+            }
+            var index = 'restaurantId';
+            if (objectStoreName === 'restaurant') {
+                index = 'id';
+            }
+            objectStore.index(index).getAllKeys(restaurantId).then(function (r) {
+                objectStore.delete(r);
             });
         });
     };
@@ -159,22 +177,46 @@ var DBManager = /** @class */ (function () {
                 restaurantObject.createIndex('id', 'id', { unique: false });
                 var reviewObject = upgradeDB.createObjectStore('review', { keyPath: 'rid', autoIncrement: true });
                 reviewObject.createIndex('restaurantId', 'restaurantId', { unique: false });
+            case 1:
+                var pendingReviewRequests = upgradeDB.createObjectStore('pendingReviewRequests', { keyPath: 'pid', autoIncrement: true });
         }
     };
     DBManager.prototype.fetchRestaurants = function () {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve) {
+                return [2 /*return*/, this.fetchData(DBManager.DATABASE_URL + 'restaurants')
+                        .then(function (restaurants) {
+                        _this.clearDB('restaurant');
+                        return _this.checkForMissingPhotograph(restaurants);
+                    })];
+            });
+        });
+    };
+    DBManager.prototype.fetchReviewsByRestaurant = function (id) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.fetchData(DBManager.DATABASE_URL + 'reviews/?restaurant_id=' + id)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    DBManager.prototype.fetchData = function (url) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve, reject) {
                         var xhr = new XMLHttpRequest();
-                        xhr.open('GET', DBManager.DATABASE_URL);
+                        xhr.open('GET', url);
                         xhr.onload = function () {
                             if (xhr.status === 200) { // Got a success response from server!
                                 var json = JSON.parse(xhr.responseText);
-                                resolve(_this.checkForMissingPhotograph(json));
+                                resolve(json);
                             }
                             else {
-                                console.log("\n              Failed to connect to database! Failfurecode: Request failed.\n              Returned status of " + xhr.status);
+                                reject();
+                                console.log("\n                  Failed to connect to database! Failfurecode: Request failed.\n                  Returned status of " + xhr.status);
                             }
                             resolve([]);
                         };
@@ -298,14 +340,73 @@ var DBManager = /** @class */ (function () {
                                 .index('restaurantId')
                                 .getAll(id)
                                 .then(function (reviews) {
-                                resolve(reviews);
+                                resolve(reviews.reverse());
                             });
                         });
                     })];
             });
         });
     };
-    DBManager.DATABASE_URL = 'http://localhost:1337/restaurants';
+    DBManager.prototype.addReviewByRestaurant = function (restaurantId, name, rating, comments) {
+        this.dbPromise.then(function (db) {
+            db.transaction('review', 'readwrite')
+                .objectStore('review')
+                .put({
+                'restaurantId': restaurantId,
+                'restuarant_id': restaurantId,
+                'name': name,
+                'createdAt': Date.now(),
+                'updatedAt': Date.now(),
+                'rating': rating,
+                'comments': comments
+            });
+        });
+        this.sendReview({
+            'restaurant_id': restaurantId,
+            'name': name,
+            'rating': rating,
+            'comments': comments
+        });
+    };
+    DBManager.prototype.sendReview = function (review) {
+        var _this = this;
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', DBManager.DATABASE_URL + 'reviews/', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 &&
+                (xhr.status !== 200 || xhr.status !== 201)) {
+                _this.addToPendingReviewRequests(review);
+            }
+        };
+        xhr.onerror = function () {
+            _this.addToPendingReviewRequests(review);
+        };
+        xhr.send(JSON.stringify(review));
+    };
+    DBManager.prototype.addToPendingReviewRequests = function (review) {
+        this.dbPromise.then(function (db) {
+            db.transaction('pendingReviewRequests', 'readwrite')
+                .objectStore('pendingReviewRequests')
+                .put(review);
+        });
+    };
+    DBManager.prototype.retryPendingReviewRequests = function () {
+        var _this = this;
+        this.dbPromise.then(function (db) {
+            db.transaction('pendingReviewRequests')
+                .objectStore('pendingReviewRequests')
+                .getAll()
+                .then(function (reviews) {
+                db.transaction('pendingReviewRequests', 'readwrite')
+                    .objectStore('pendingReviewRequests')
+                    .clear();
+                reviews.forEach(function (review) { return _this.sendReview(review); });
+            });
+        });
+        window.setTimeout(this.retryPendingReviewRequests.bind(this), 3000);
+    };
+    DBManager.DATABASE_URL = 'https://pure-dusk-67754.herokuapp.com/';
     return DBManager;
 }());
 
@@ -923,16 +1024,22 @@ var Restaurant = /** @class */ (function () {
     };
     Restaurant.prototype.fillReviewsHTML = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var container, title, reviews, noReviews, ul;
+            var container, title, form, reviews, noReviews, ul;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         container = document.getElementById('reviews-container');
+                        container.innerHTML = '';
                         title = document.createElement('h3');
                         title.setAttribute('tabindex', '0');
                         title.innerHTML = 'Reviews';
                         container.appendChild(title);
+                        form = document.createElement('div');
+                        form.innerHTML = "\n      <div class=\"form_review\">\n          <label for=\"form_name\">Your Name:</label>\n          <input type=\"text\" id=\"form_name\" />\n          <label for=\"form_rating\">Your Rating:</label>\n          <select id=\"form_rating\">\n            <option value=\"1\">1 Star</option>\n            <option value=\"2\">2 Stars</option>\n            <option value=\"3\">3 Stars</option>\n            <option value=\"4\">4 Stars</option>\n            <option value=\"5\">5 Stars</option>\n          </select>\n          <label for=\"form_review\">Your Message:</label>\n          <textarea id=\"form_review\"></textarea>\n          <input type=\"submit\" value=\"Send Review\" id=\"form_submit\"\n                 aria-label=\"Send Review\" />\n      </div>\n    ";
+                        container.appendChild(form);
+                        document.getElementById('form_submit')
+                            .addEventListener('click', this.formSubmit.bind(this));
                         return [4 /*yield*/, this.dbManager.getReviewsByRestaurantId(this.restaurant.id)];
                     case 1:
                         reviews = _a.sent();
@@ -942,7 +1049,8 @@ var Restaurant = /** @class */ (function () {
                             container.appendChild(noReviews);
                             return [2 /*return*/];
                         }
-                        ul = document.getElementById('reviews-list');
+                        ul = document.createElement('ul');
+                        ul.setAttribute('id', 'reviews-list');
                         reviews.forEach(function (review) {
                             ul.appendChild(_this.createReviewHTML(review));
                         });
@@ -951,6 +1059,13 @@ var Restaurant = /** @class */ (function () {
                 }
             });
         });
+    };
+    Restaurant.prototype.formSubmit = function (event) {
+        this.dbManager.addReviewByRestaurant(this.restaurant.id, document.getElementById('form_name').value, parseInt(document.getElementById('form_rating').value, 10), document.getElementById('form_review').value);
+        document.getElementById('form_name').value = '';
+        document.getElementById('form_rating').value = '';
+        document.getElementById('form_review').value = '';
+        this.fillReviewsHTML();
     };
     Restaurant.prototype.createReviewHTML = function (review) {
         var li = document.createElement('li');
@@ -962,7 +1077,7 @@ var Restaurant = /** @class */ (function () {
         reviewHead.appendChild(name);
         var date = document.createElement('span');
         date.classList.add('review-date');
-        date.innerHTML = review.date;
+        date.innerHTML = (new Date(review.updatedAt)).toString();
         reviewHead.appendChild(date);
         li.appendChild(reviewHead);
         var rating = document.createElement('p');
@@ -1002,4 +1117,3 @@ var Restaurant = /** @class */ (function () {
 /***/ })
 /******/ ]);
 });
-//# sourceMappingURL=main.js.map

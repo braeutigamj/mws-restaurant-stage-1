@@ -1,11 +1,11 @@
 var gulp = require('gulp');
 var webpack = require('webpack-stream');
+var minify = require('gulp-minify');
+var cleanCSS = require('gulp-clean-css');
 
-gulp.task('build-main', () => {
+gulp.task('main-js', () => {
   return gulp.src('src/js/main.ts')
     .pipe(webpack({
-    devtool: 'source-map',
-    watch: true,
     module: {
       rules: [
         {
@@ -23,14 +23,19 @@ gulp.task('build-main', () => {
       libraryTarget: 'umd'
     }
   }))
+  .pipe(minify())
   .pipe(gulp.dest('js/'));
 });
 
-gulp.task('build-restaurant', () => {
+gulp.task('main-css', () => {
+  return gulp.src('src/css/main.css')
+    .pipe(cleanCSS())
+    .pipe(gulp.dest('css/'));
+});
+
+gulp.task('restaurant-js', () => {
   return gulp.src('src/js/restaurant.ts')
     .pipe(webpack({
-    devtool: 'source-map',
-    watch: true,
     module: {
       rules: [
         {
@@ -48,5 +53,12 @@ gulp.task('build-restaurant', () => {
       libraryTarget: 'umd'
     }
   }))
+  .pipe(minify())
   .pipe(gulp.dest('js/'));
+});
+
+gulp.task('restaurant-css', () => {
+  return gulp.src('src/css/restaurant.css')
+    .pipe(cleanCSS())
+    .pipe(gulp.dest('css/'));
 });

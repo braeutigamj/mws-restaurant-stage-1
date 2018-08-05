@@ -21,7 +21,6 @@
   <meta name="msapplication-starturl" content="/">
   <link rel="manifest" href="manifest.json">
   <title>Restaurant Info</title>
-  <script src="service_worker.js"></script>
   <script>
     var restaurant;
     var map;
@@ -66,7 +65,12 @@
 
 </head>
 
-<body class="inside">
+<body
+    ononline="document.getElementById('offlinewarning').style.display='none'"
+    onoffline="document.getElementById('offlinewarning').style.display='block'">
+  <div id="offlinewarning">
+    You're offline! You're reviews will be safed, if you're online again!
+  </div>
   <!-- Beginning header -->
   <header>
     <!-- Beginning nav -->
@@ -126,23 +130,32 @@
   <!-- End scripts -->
   <script>
     document.addEventListener('DOMContentLoaded', (event) => {
+      function loadServiceWorker() {
+        var serviceJS = document.createElement('script');
+        serviceJS.onload = function() {
+          loadRestaurant();
+        };
+        serviceJS.src = 'service_worker.js';
+        document.body.appendChild(serviceJS);
+      }
+
       function loadRestaurant() {
 
         var restaurantJS = document.createElement('script');
         restaurantJS.onload = function() {
           restaurant = new Restaurant.Restaurant();
         };
-        restaurantJS.src = 'js/restaurant.js';
+        restaurantJS.src = 'js/restaurant-min.js';
         document.body.appendChild(restaurantJS);
 
         var restaurantCSS = document.createElement('link');
-        restaurantCSS.href = 'css/styles.css';
+        restaurantCSS.href = 'css/restaurant.css';
         restaurantCSS.type = 'text/css';
         restaurantCSS.rel = 'stylesheet';
         restaurantCSS.media = 'screen,pring';
         document.getElementsByTagName('head')[0].appendChild(restaurantCSS);
       }
-      loadRestaurant();
+      loadServiceWorker();
     });
   </script>
 </body>

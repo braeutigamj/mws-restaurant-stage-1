@@ -26,9 +26,8 @@ Most of the code in this project has been written to the ES6 JavaScript specific
 
 ### How to build the project
 1. $ npm install
-2. $ gulp build-main
-3. $ gulp build-restaurant
-4. $ python -m SimpleHTTPServer 8000
-
-or simple run the online demo with working https:
-https://mws1.braeutigamj.de/
+2. $ gulp main-js
+3. $ gulp main-css
+4. $ gulp restaurant-js
+5. $ gulp restaurant-css
+6. $ python -m SimpleHTTPServer 8000
