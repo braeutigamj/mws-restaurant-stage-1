@@ -84,7 +84,8 @@ export class Restaurant
   private async fillRestaurantHTML(): Promise<void>
   {
     const name = document.getElementById('restaurant-name');
-    name.innerHTML = this.restaurant.name;
+    name.innerHTML = this.restaurant.name + await this.getFavouriteStar();
+    name.addEventListener('click', this.changeFavouriteState.bind(this));
 
     const address = document.getElementById('restaurant-address');
     address.innerHTML = this.restaurant.address;
@@ -106,9 +107,28 @@ export class Restaurant
     this.fillReviewsHTML();
   }
 
+  private async changeFavouriteState(event): Promise<void>
+  {
+    await this.dbManager.changeFavouriteState(this.restaurant.id);
+    this.fillRestaurantHTML();
+  }
+
+  private async getFavouriteStar(): Promise<string>
+  {
+    let returnString: string = ' <a href="#" id="favourite" aria-label="';
+    if (await this.dbManager.isFavouriteRestaurant(this.restaurant.id)) {
+      returnString += 'unset favourite"> &#9733;';
+    }
+    else {
+      returnString += 'set favourite"> &#9734;';
+    }
+    return returnString + '</a>';
+  }
+
   private fillRestaurantHoursHTML(): void
   {
     const hours = document.getElementById('restaurant-hours');
+    hours.innerHTML = '';
     for (let key in this.restaurant.operating_hours) {
       const row = document.createElement('tr');
 

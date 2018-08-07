@@ -130,6 +130,33 @@ nav h1 a {
   height: 300px;
   width: 100%;
   background-color: #ccc;
+  display: none;
+}
+
+.button {
+  align-self: end;
+  background-color: orange;
+  color: #fff;
+  display: inline-block;
+  font-size: 10pt;
+  margin: 15px 10px 0;
+  padding: 8px 30px 10px;
+  text-transform: uppercase;
+}
+
+#map-container {
+  min-height: 20vh;
+  background-color: #d3d3d3;
+}
+
+#map-container .button {
+  align-self: center;
+}
+
+#no-map {
+  display: flex;
+  justify-content: center;
+  min-height: inherit;
 }
 
 @media screen and (min-width: 1024px) {

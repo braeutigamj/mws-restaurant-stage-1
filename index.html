@@ -24,7 +24,7 @@
   <script>
     var main;
     var map;
-    var initMap = function () {
+    function initMap() {
       let loc = {
         lat: 40.722216,
         lng: -73.987501
@@ -40,26 +40,30 @@
     var markers = [];
     function addMarkersToMap(restaurants)
     {
-      restaurants.forEach(restaurant => {
-        // Add marker to the map
-        const marker = mapMarkerForRestaurant(restaurant);
-        google.maps.event.addListener(marker, 'click', () => {
-          window.location.href = marker.url
+      if ((typeof google) !== 'undefined') {
+        restaurants.forEach(restaurant => {
+          // Add marker to the map
+          const marker = mapMarkerForRestaurant(restaurant);
+          google.maps.event.addListener(marker, 'click', () => {
+            window.location.href = marker.url
+          });
+          markers.push(marker);
         });
-        markers.push(marker);
-      });
+      }
     }
 
     function mapMarkerForRestaurant(restaurant)
     {
-      const marker = new google.maps.Marker({
-        position: restaurant.latlng,
-        title: restaurant.name,
-        url: main.urlForRestaurant(restaurant),
-        map: map,
-        animation: google.maps.Animation.DROP}
-      );
-      return marker;
+      if ((typeof google) !== 'undefined') {
+        const marker = new google.maps.Marker({
+          position: restaurant.latlng,
+          title: restaurant.name,
+          url: main.urlForRestaurant(restaurant),
+          map: map,
+          animation: google.maps.Animation.DROP}
+        );
+        return marker;
+      }
     }
 
     function removeMarkersFromMap()
@@ -90,7 +94,10 @@
 
   <main id="maincontent">
     <section tabindex="-1" id="map-container">
-      <div id="map" role="application" aria-label="Google Maps"></div>
+      <div id="no-map">
+        <a role="button" id="showMap" class="button" href="#">Show Map</a>
+      </div>
+      <div id="map" role="application" aria-label="Google Maps"></div>-
     </section>
     <section>
       <div class="filter-options">
@@ -107,8 +114,6 @@
     </section>
   </main>
 
-  <script async defer
-          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCyCpSQZd_ea7t_sDtZHLNyw5VFOp0lgxs&libraries=places&callback=initMap"></script>
   <footer id="footer">
     Copyright (c) 2017
     <a href="/"><strong>Restaurant Reviews</strong></a>
@@ -141,6 +146,18 @@
         document.getElementsByTagName('head')[0].appendChild(mainCSS);
       }
       loadServiceWorker();
+      document.getElementById('showMap').addEventListener('click', function(e) {
+        document.getElementById('no-map').style.display = 'none';
+        var googleJS = document.createElement('script');
+        googleJS.onload = function() {
+          document.getElementById('map').style.display = 'block';
+          main.fillRestaurantsHTML();
+          initMap();
+        };
+        googleJS.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyCyCpSQZd_ea7t_sDtZHLNyw5VFOp0lgxs&libraries=places';
+        document.body.appendChild(googleJS);
+
+      });
     });
   </script>
 </body>

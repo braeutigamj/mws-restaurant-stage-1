@@ -158,31 +158,73 @@ var Restaurant = /** @class */ (function () {
     };
     Restaurant.prototype.fillRestaurantHTML = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var name, address, image, cuisine;
-            return __generator(this, function (_a) {
-                name = document.getElementById('restaurant-name');
-                name.innerHTML = this.restaurant.name;
-                address = document.getElementById('restaurant-address');
-                address.innerHTML = this.restaurant.address;
-                image = document.getElementById('restaurant-img');
-                image.className = 'restaurant-img';
-                image.src = "/img/" + this.restaurant.photograph;
-                image.srcset = Restaurant.getRestaurantSrcset(this.restaurant.photograph);
-                image.alt = 'photograph of ' + this.restaurant.name;
-                cuisine = document.getElementById('restaurant-cuisine');
-                cuisine.innerHTML = this.restaurant.cuisine_type;
-                // fill operating hours
-                if (this.restaurant.operating_hours) {
-                    this.fillRestaurantHoursHTML();
+            var name, _a, _b, address, image, cuisine;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        name = document.getElementById('restaurant-name');
+                        _a = name;
+                        _b = this.restaurant.name;
+                        return [4 /*yield*/, this.getFavouriteStar()];
+                    case 1:
+                        _a.innerHTML = _b + (_c.sent());
+                        name.addEventListener('click', this.changeFavouriteState.bind(this));
+                        address = document.getElementById('restaurant-address');
+                        address.innerHTML = this.restaurant.address;
+                        image = document.getElementById('restaurant-img');
+                        image.className = 'restaurant-img';
+                        image.src = "/img/" + this.restaurant.photograph;
+                        image.srcset = Restaurant.getRestaurantSrcset(this.restaurant.photograph);
+                        image.alt = 'photograph of ' + this.restaurant.name;
+                        cuisine = document.getElementById('restaurant-cuisine');
+                        cuisine.innerHTML = this.restaurant.cuisine_type;
+                        // fill operating hours
+                        if (this.restaurant.operating_hours) {
+                            this.fillRestaurantHoursHTML();
+                        }
+                        // fill reviews
+                        this.fillReviewsHTML();
+                        return [2 /*return*/];
                 }
-                // fill reviews
-                this.fillReviewsHTML();
-                return [2 /*return*/];
+            });
+        });
+    };
+    Restaurant.prototype.changeFavouriteState = function (event) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.dbManager.changeFavouriteState(this.restaurant.id)];
+                    case 1:
+                        _a.sent();
+                        this.fillRestaurantHTML();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Restaurant.prototype.getFavouriteStar = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var returnString;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        returnString = ' <a href="#" id="favourite" aria-label="';
+                        return [4 /*yield*/, this.dbManager.isFavouriteRestaurant(this.restaurant.id)];
+                    case 1:
+                        if (_a.sent()) {
+                            returnString += 'unset favourite"> &#9733;';
+                        }
+                        else {
+                            returnString += 'set favourite"> &#9734;';
+                        }
+                        return [2 /*return*/, returnString + '</a>'];
+                }
             });
         });
     };
     Restaurant.prototype.fillRestaurantHoursHTML = function () {
         var hours = document.getElementById('restaurant-hours');
+        hours.innerHTML = '';
         for (var key in this.restaurant.operating_hours) {
             var row = document.createElement('tr');
             var day = document.createElement('td');
@@ -333,7 +375,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var DBManager = /** @class */ (function () {
     function DBManager() {
         this.refreshDB();
-        this.dbPromise = __WEBPACK_IMPORTED_MODULE_0__idb__["open"]('restaurantApp', 2, this.updateDBStructure);
+        this.dbPromise = __WEBPACK_IMPORTED_MODULE_0__idb__["open"]('restaurantApp', 3, this.updateDBStructure);
         this.retryPendingReviewRequests();
     }
     DBManager.prototype.refreshDB = function () {
@@ -392,6 +434,8 @@ var DBManager = /** @class */ (function () {
                 reviewObject.createIndex('restaurantId', 'restaurantId', { unique: false });
             case 1:
                 var pendingReviewRequests = upgradeDB.createObjectStore('pendingReviewRequests', { keyPath: 'pid', autoIncrement: true });
+            case 2:
+                var favourites = upgradeDB.createObjectStore('favourite');
         }
     };
     DBManager.prototype.fetchRestaurants = function () {
@@ -618,6 +662,43 @@ var DBManager = /** @class */ (function () {
             });
         });
         window.setTimeout(this.retryPendingReviewRequests.bind(this), 3000);
+    };
+    DBManager.prototype.isFavouriteRestaurant = function (restaurantId) {
+        return this.dbPromise.then(function (db) {
+            return db.transaction('favourite')
+                .objectStore('favourite')
+                .get(restaurantId);
+        });
+    };
+    DBManager.prototype.changeFavouriteState = function (restaurantId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.dbPromise.then(function (db) {
+                            return db.transaction('favourite')
+                                .objectStore('favourite')
+                                .get(restaurantId).then(function (r) {
+                                _this.dbPromise.then(function (db) {
+                                    if (r) {
+                                        db.transaction('favourite', 'readwrite')
+                                            .objectStore('favourite')
+                                            .put(false, restaurantId);
+                                    }
+                                    else {
+                                        db.transaction('favourite', 'readwrite')
+                                            .objectStore('favourite')
+                                            .put(true, restaurantId);
+                                    }
+                                });
+                            });
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
     DBManager.DATABASE_URL = 'https://pure-dusk-67754.herokuapp.com/';
     return DBManager;

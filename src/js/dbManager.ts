@@ -11,7 +11,7 @@ export class DBManager
   constructor()
   {
     this.refreshDB();
-    this.dbPromise = idb.open('restaurantApp', 2, this.updateDBStructure);
+    this.dbPromise = idb.open('restaurantApp', 3, this.updateDBStructure);
     this.retryPendingReviewRequests();
   }
 
@@ -75,6 +75,8 @@ export class DBManager
             upgradeDB.createObjectStore(
                 'pendingReviewRequests',
                 { keyPath: 'pid', autoIncrement: true });
+      case 2:
+        let favourites = upgradeDB.createObjectStore('favourite');
     }
   }
 
@@ -280,5 +282,36 @@ export class DBManager
         });
     });
     window.setTimeout(this.retryPendingReviewRequests.bind(this), 3000);
+  }
+
+  public isFavouriteRestaurant(restaurantId: number): Promise<boolean>
+  {
+    return this.dbPromise.then(db => {
+      return db.transaction('favourite')
+        .objectStore('favourite')
+        .get(restaurantId);
+    });
+  }
+
+  public async changeFavouriteState(restaurantId: number): Promise<void>
+  {
+    await this.dbPromise.then(db => {
+      return db.transaction('favourite')
+        .objectStore('favourite')
+        .get(restaurantId).then(r => {
+          this.dbPromise.then(db => {
+            if(r) {
+              db.transaction('favourite', 'readwrite')
+                .objectStore('favourite')
+                .put(false, restaurantId);
+            }
+            else {
+              db.transaction('favourite', 'readwrite')
+                .objectStore('favourite')
+                .put(true, restaurantId);
+            }
+          });
+        });
+    });
   }
 }

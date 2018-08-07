@@ -48,7 +48,7 @@ export class Main
       });
   }
 
-  private async fillRestaurantsHTML(): Promise<void>
+  public async fillRestaurantsHTML(): Promise<void>
   {
     const neighborhoodsSelect =
         <HTMLSelectElement>document.getElementById('neighborhoods-select');
@@ -87,7 +87,6 @@ export class Main
     li.appendChild(image);
     const name = document.createElement('h2');
     name.innerHTML = restaurant.name;
-    name.setAttribute('tabindex', '0');
     li.appendChild(name);
 
     const neighborhood = document.createElement('p');
@@ -99,6 +98,8 @@ export class Main
     li.appendChild(address);
 
     const more = document.createElement('a');
+    more.setAttribute('role', 'button');
+    more.classList.add('button');
     more.setAttribute('aria-label', restaurant.name);
     more.innerHTML = 'View Details';
     more.href = this.urlForRestaurant(restaurant);
