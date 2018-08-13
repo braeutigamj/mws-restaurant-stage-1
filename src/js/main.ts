@@ -12,6 +12,12 @@ export class Main
   constructor()
   {
     this.dbManager = new DBManager();
+    this.fillHTML();
+  }
+
+  private async fillHTML(): Promise<void>
+  {
+    await this.dbManager.refreshDB();
     this.fillNeighborhoodsHTML();
     this.fillCuisinesHTML();
     this.fillRestaurantsHTML();

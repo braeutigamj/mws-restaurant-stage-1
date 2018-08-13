@@ -1,47 +1,74 @@
 import { Review, RestaurantScheme } from './restaurant';
 import * as idb from './idb';
 
+export interface Favourite {
+  restaurantId: number,
+  favourite: boolean
+}
+
 export class DBManager
 {
 
   private static readonly DATABASE_URL =
       'https://pure-dusk-67754.herokuapp.com/';
   private dbPromise: any;
+  private static instance: DBManager;
 
   constructor()
   {
-    this.refreshDB();
     this.dbPromise = idb.open('restaurantApp', 3, this.updateDBStructure);
-    this.retryPendingReviewRequests();
+    DBManager.instance = this;
   }
 
-  private async refreshDB(): Promise<void>
+  public static getInstance(): DBManager
   {
-    (await this.fetchRestaurants()).forEach((restaurant: RestaurantScheme) =>  {
-      this.dbPromise.then(db => {
-        let dbRestaurant =
-            db.transaction('restaurant', 'readwrite')
-              .objectStore('restaurant');
+    if (!DBManager.instance) {
+      return new DBManager();
+    }
+    return DBManager.instance;
+  }
 
+  public async refreshDB(): Promise<void>
+  {
+    if (this.isInOfflineMode()) {
+      return;
+    }
+    await this.clearDB('restaurant');
+    const restaurants = await this.fetchRestaurants();
+    const restaurantsLoaded: Array<Promise<void>> = [];
+    restaurants.forEach(restaurant => {
+      restaurantsLoaded.push(new Promise(resolve => {
         this.fetchReviewsByRestaurant(restaurant['id']).then(reviews => {
-          if (reviews) {
-            this.clearDB('review', restaurant['id']);
-            reviews.forEach(review => {
-              review['restaurantId'] = restaurant['id'];
-              db.transaction('review', 'readwrite')
-                .objectStore('review')
-                .put(review);
+          this.clearDB('review', restaurant['id']).then(() => {
+            const reviewsLoaded: Array<Promise<void>> = [];
+            if (reviews) {
+              reviews.forEach(review => {
+                reviewsLoaded.push(new Promise(resolveReview => {
+                  review['restaurantId'] = restaurant['id'];
+                  this.dbPromise.then(db => {
+                    db.transaction('review', 'readwrite')
+                      .objectStore('review')
+                      .put(review).then(o => resolveReview());
+                  });
+                }));
+              });
+            }
+            this.dbPromise.then(db => {
+              let dbRestaurant =
+                  db.transaction('restaurant', 'readwrite')
+                    .objectStore('restaurant');
+              dbRestaurant.put(restaurant).then(o => resolve());
             });
-          }
+          });
         });
-        dbRestaurant.put(restaurant);
-      });
+      }));
     });
+    await Promise.all(restaurantsLoaded);
   }
 
-  private clearDB(objectStoreName: string, restaurantId?: number): void
+  private clearDB(objectStoreName: string, restaurantId?: number): Promise<void>
   {
-    this.dbPromise.then(db => {
+    return this.dbPromise.then(db => {
       const objectStore = db.transaction(objectStoreName, 'readwrite')
         .objectStore(objectStoreName);
       if (!restaurantId) {
@@ -53,7 +80,7 @@ export class DBManager
         index = 'id';
       }
       objectStore.index(index).getAllKeys(restaurantId).then(r => {
-            objectStore.delete(r);
+            r.forEach(e => objectStore.delete(e));
       });
     });
   }
@@ -85,7 +112,6 @@ export class DBManager
 
     return this.fetchData(DBManager.DATABASE_URL + 'restaurants')
       .then(restaurants => {
-        this.clearDB('restaurant');
         return this.checkForMissingPhotograph(restaurants);
       });
   }
@@ -110,7 +136,7 @@ export class DBManager
               resolve(json);
             } else {
               reject();
-              console.log(`
+              console.error(`
                   Failed to connect to database! Failfurecode: Request failed.
                   Returned status of ${xhr.status}`);
             }
@@ -235,37 +261,109 @@ export class DBManager
     });
 
     this.sendReview({
-      'restaurant_id': restaurantId,
-      'name': name,
-      'rating': rating,
-      'comments': comments
+        'restaurant_id': restaurantId,
+        'name': name,
+        'rating': rating,
+        'comments': comments
+    }).then(() => {
+      console.log('send successful');
+    }).catch(() => {
+      this.addToPendingReviewRequests({
+        request: 'review',
+        review: {
+          'restaurant_id': restaurantId,
+          'name': name,
+          'rating': rating,
+          'comments': comments
+        }
+      });
     });
   }
 
-  private sendReview(review: Object): void
+  private isInOfflineMode(): boolean
   {
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', DBManager.DATABASE_URL + 'reviews/', true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onreadystatechange = () => {
-      if (xhr.readyState == 4 &&
-          (xhr.status !== <number>200 || xhr.status !== <number>201)) {
-        this.addToPendingReviewRequests(review);
-      }
-    };
-    xhr.onerror = () => {
-      this.addToPendingReviewRequests(review);
-    };
-    xhr.send(JSON.stringify(review));
+    return !navigator.onLine;
   }
 
-  private addToPendingReviewRequests(review: Object): void
+  private sendReview(review: Object): Promise<void>
+  {
+    return new Promise((resolve, reject) => {
+      if (this.isInOfflineMode()) {
+        reject();
+      }
+      let xhr = new XMLHttpRequest();
+      xhr.open('POST', DBManager.DATABASE_URL + 'reviews/', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState == 4) {
+          if (xhr.status === <number>200 || xhr.status === <number>201) {
+            resolve();
+          }
+          else {
+            reject();
+          }
+        }
+      };
+      xhr.onerror = () => {
+        reject();
+      };
+      xhr.send(JSON.stringify(review));
+    });
+  }
+
+  private sendFavourite(favourite: Favourite): Promise<void>
+  {
+    return new Promise((resolve, reject) => {
+      if (this.isInOfflineMode()) {
+        reject();
+      }
+      let xhr = new XMLHttpRequest();
+      xhr.open(
+          'POST',
+          DBManager.DATABASE_URL + 'restaurants/' + favourite.restaurantId +
+          '/?is_favorite=' + favourite.favourite,
+          true);
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState == 4) {
+          if (xhr.status === <number>200 || xhr.status === <number>201) {
+            resolve();
+          }
+          else {
+            reject();
+          }
+        }
+      };
+      xhr.onerror = () => {
+        reject();
+      };
+      xhr.send();
+    });
+  }
+
+  private addToPendingReviewRequests(pendingRequest: Object): void
   {
     this.dbPromise.then(db => {
       db.transaction('pendingReviewRequests', 'readwrite')
         .objectStore('pendingReviewRequests')
-        .put(review);
+        .put(pendingRequest);
     });
+    this.tellServiceWorkerToFulfill();
+  }
+
+  private tellServiceWorkerToFulfill(): void
+  {
+    const messageChannel = new MessageChannel();
+    messageChannel.port1.onmessage = (event) => {
+      if (event.data.error) {
+        console.log(event.data.error);
+      }
+      else {
+        console.log(event.data);
+      }
+    };
+
+    navigator.serviceWorker.controller
+      .postMessage('fullFillPendingRequests', [messageChannel.port2]);
   }
 
   private retryPendingReviewRequests(): void
@@ -274,14 +372,20 @@ export class DBManager
       db.transaction('pendingReviewRequests')
         .objectStore('pendingReviewRequests')
         .getAll()
-        .then(reviews => {
+        .then(requests => {
           db.transaction('pendingReviewRequests', 'readwrite')
             .objectStore('pendingReviewRequests')
             .clear();
-          reviews.forEach(review => this.sendReview(review));
+          requests.forEach(request => {
+            if (request.request === 'review') {
+              this.sendReview(request.review);
+            }
+            if (request.request === 'favourite') {
+              this.sendFavourite(request.favourite);
+            }
+          });
         });
     });
-    window.setTimeout(this.retryPendingReviewRequests.bind(this), 3000);
   }
 
   public isFavouriteRestaurant(restaurantId: number): Promise<boolean>
@@ -295,6 +399,7 @@ export class DBManager
 
   public async changeFavouriteState(restaurantId: number): Promise<void>
   {
+    let favourite: boolean = false;
     await this.dbPromise.then(db => {
       return db.transaction('favourite')
         .objectStore('favourite')
@@ -309,9 +414,24 @@ export class DBManager
               db.transaction('favourite', 'readwrite')
                 .objectStore('favourite')
                 .put(true, restaurantId);
+                favourite = true;
             }
           });
         });
+    });
+    this.sendFavourite({
+        restaurantId: restaurantId,
+        favourite: favourite
+    }).then(() => {
+      console.log('send successful');
+    }).catch(() => {
+      this.addToPendingReviewRequests({
+        request: 'favourite',
+        favourite: {
+          restaurantId: restaurantId,
+          favourite: favourite
+        }
+      });
     });
   }
 }

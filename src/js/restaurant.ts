@@ -50,8 +50,7 @@ export class Restaurant
 
   constructor()
   {
-    this.dbManager = new DBManager();
-    this.loadRestaurant();
+    this.dbManager = DBManager.getInstance();
   }
 
   private async loadRestaurant(): Promise<void>
@@ -59,9 +58,14 @@ export class Restaurant
     const id = parseInt(this.getParameterByName('id'), 10);
     if (!id) { // no id found in URL
       console.error('No restaurant id in URL');
+      window.location.href = 'index.html';
       return;
     }
+    await this.dbManager.refreshDB();
     this.restaurant = await this.dbManager.getRestaurantDetail(id);
+    if (!this.restaurant) {
+      window.location.href = 'index.html';
+    }
     addMarkersToMap([this.restaurant]);
     this.fillRestaurantHTML();
     this.fillBreadcrumb();
@@ -235,14 +239,13 @@ export class Restaurant
 
   public fillBreadcrumb(): void
   {
-    const breadcrumb = document.querySelector('#breadcrumb ul');
-    const li = document.createElement('li');
+    const li = document.querySelector('#restaurant_title');
     const currentPage = document.createElement('a');
     currentPage.innerHTML = this.restaurant.name;
     currentPage.setAttribute('aria-current', 'page');
     currentPage.href = '#';
+    li.innerHTML = '';
     li.appendChild(currentPage);
-    breadcrumb.appendChild(li);
   }
 
   public static getRestaurantSrcset(image: string): string

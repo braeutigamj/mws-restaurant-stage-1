@@ -17,7 +17,7 @@
   <meta name="msapplication-navbutton-color" content="#333">
   <meta name="apple-mobile-web-app-status-bar-style"
         content="black-translucent">
-  <meta name="msapplication-starturl" content="/">
+  <meta name="msapplication-starturl" content="./index.html">
   <link rel="manifest" href="manifest.json">
   <title>Restaurant Info</title>
   <script>
@@ -84,6 +84,7 @@
     <nav id="breadcrumb" aria-label="Navigation">
       <ul>
         <li><a href="/">Home</a></li>
+        <li id="restaurant_title"></li>
       </ul>
     </nav>
     <!-- End breadcrumb -->
@@ -145,8 +146,11 @@
         var restaurantJS = document.createElement('script');
         restaurantJS.onload = function() {
           restaurant = new Restaurant.Restaurant();
+          restaurant.loadRestaurant().then(() => {
+            loadMap();
+          });
         };
-        restaurantJS.src = 'js/restaurant-min.js';
+        restaurantJS.src = 'js/restaurant.js';
         document.body.appendChild(restaurantJS);
 
         var restaurantCSS = document.createElement('link');
@@ -157,18 +161,19 @@
         document.getElementsByTagName('head')[0].appendChild(restaurantCSS);
       }
 
-      document.getElementById('showMap').addEventListener('click', function(e) {
-        document.getElementById('no-map').style.display = 'none';
-        var googleJS = document.createElement('script');
-        googleJS.onload = function() {
-          document.getElementById('map').style.display = 'block';
-          restaurant.fillRestaurantHTML();
-          initMap();
-        };
-        googleJS.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyCyCpSQZd_ea7t_sDtZHLNyw5VFOp0lgxs&libraries=places';
-        document.body.appendChild(googleJS);
+      function loadMap() {
+        document.getElementById('showMap').addEventListener('click', function(e) {
+          document.getElementById('no-map').style.display = 'none';
+          var googleJS = document.createElement('script');
+          googleJS.onload = function() {
+            document.getElementById('map').style.display = 'block';
+            initMap();
+          };
+          googleJS.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyCyCpSQZd_ea7t_sDtZHLNyw5VFOp0lgxs&libraries=places';
+          document.body.appendChild(googleJS);
 
-      });
+        });
+      }
 
       loadServiceWorker();
     });

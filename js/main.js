@@ -119,42 +119,68 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 
 var DBManager = /** @class */ (function () {
     function DBManager() {
-        this.refreshDB();
         this.dbPromise = __WEBPACK_IMPORTED_MODULE_0__idb__["open"]('restaurantApp', 3, this.updateDBStructure);
-        this.retryPendingReviewRequests();
+        DBManager.instance = this;
     }
+    DBManager.getInstance = function () {
+        if (!DBManager.instance) {
+            return new DBManager();
+        }
+        return DBManager.instance;
+    };
     DBManager.prototype.refreshDB = function () {
         return __awaiter(this, void 0, void 0, function () {
+            var restaurants, restaurantsLoaded;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.fetchRestaurants()];
+                    case 0:
+                        if (this.isInOfflineMode()) {
+                            return [2 /*return*/];
+                        }
+                        return [4 /*yield*/, this.clearDB('restaurant')];
                     case 1:
-                        (_a.sent()).forEach(function (restaurant) {
-                            _this.dbPromise.then(function (db) {
-                                var dbRestaurant = db.transaction('restaurant', 'readwrite')
-                                    .objectStore('restaurant');
+                        _a.sent();
+                        return [4 /*yield*/, this.fetchRestaurants()];
+                    case 2:
+                        restaurants = _a.sent();
+                        restaurantsLoaded = [];
+                        restaurants.forEach(function (restaurant) {
+                            restaurantsLoaded.push(new Promise(function (resolve) {
                                 _this.fetchReviewsByRestaurant(restaurant['id']).then(function (reviews) {
-                                    if (reviews) {
-                                        _this.clearDB('review', restaurant['id']);
-                                        reviews.forEach(function (review) {
-                                            review['restaurantId'] = restaurant['id'];
-                                            db.transaction('review', 'readwrite')
-                                                .objectStore('review')
-                                                .put(review);
+                                    _this.clearDB('review', restaurant['id']).then(function () {
+                                        var reviewsLoaded = [];
+                                        if (reviews) {
+                                            reviews.forEach(function (review) {
+                                                reviewsLoaded.push(new Promise(function (resolveReview) {
+                                                    review['restaurantId'] = restaurant['id'];
+                                                    _this.dbPromise.then(function (db) {
+                                                        db.transaction('review', 'readwrite')
+                                                            .objectStore('review')
+                                                            .put(review).then(function (o) { return resolveReview(); });
+                                                    });
+                                                }));
+                                            });
+                                        }
+                                        _this.dbPromise.then(function (db) {
+                                            var dbRestaurant = db.transaction('restaurant', 'readwrite')
+                                                .objectStore('restaurant');
+                                            dbRestaurant.put(restaurant).then(function (o) { return resolve(); });
                                         });
-                                    }
+                                    });
                                 });
-                                dbRestaurant.put(restaurant);
-                            });
+                            }));
                         });
+                        return [4 /*yield*/, Promise.all(restaurantsLoaded)];
+                    case 3:
+                        _a.sent();
                         return [2 /*return*/];
                 }
             });
         });
     };
     DBManager.prototype.clearDB = function (objectStoreName, restaurantId) {
-        this.dbPromise.then(function (db) {
+        return this.dbPromise.then(function (db) {
             var objectStore = db.transaction(objectStoreName, 'readwrite')
                 .objectStore(objectStoreName);
             if (!restaurantId) {
@@ -166,7 +192,7 @@ var DBManager = /** @class */ (function () {
                 index = 'id';
             }
             objectStore.index(index).getAllKeys(restaurantId).then(function (r) {
-                objectStore.delete(r);
+                r.forEach(function (e) { return objectStore.delete(e); });
             });
         });
     };
@@ -189,7 +215,6 @@ var DBManager = /** @class */ (function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, this.fetchData(DBManager.DATABASE_URL + 'restaurants')
                         .then(function (restaurants) {
-                        _this.clearDB('restaurant');
                         return _this.checkForMissingPhotograph(restaurants);
                     })];
             });
@@ -218,7 +243,7 @@ var DBManager = /** @class */ (function () {
                             }
                             else {
                                 reject();
-                                console.log("\n                  Failed to connect to database! Failfurecode: Request failed.\n                  Returned status of " + xhr.status);
+                                console.error("\n                  Failed to connect to database! Failfurecode: Request failed.\n                  Returned status of " + xhr.status);
                             }
                             resolve([]);
                         };
@@ -350,6 +375,7 @@ var DBManager = /** @class */ (function () {
         });
     };
     DBManager.prototype.addReviewByRestaurant = function (restaurantId, name, rating, comments) {
+        var _this = this;
         this.dbPromise.then(function (db) {
             db.transaction('review', 'readwrite')
                 .objectStore('review')
@@ -368,30 +394,93 @@ var DBManager = /** @class */ (function () {
             'name': name,
             'rating': rating,
             'comments': comments
+        }).then(function () {
+            console.log('send successful');
+        }).catch(function () {
+            _this.addToPendingReviewRequests({
+                request: 'review',
+                review: {
+                    'restaurant_id': restaurantId,
+                    'name': name,
+                    'rating': rating,
+                    'comments': comments
+                }
+            });
         });
+    };
+    DBManager.prototype.isInOfflineMode = function () {
+        return !navigator.onLine;
     };
     DBManager.prototype.sendReview = function (review) {
         var _this = this;
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', DBManager.DATABASE_URL + 'reviews/', true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState == 4 &&
-                (xhr.status !== 200 || xhr.status !== 201)) {
-                _this.addToPendingReviewRequests(review);
+        return new Promise(function (resolve, reject) {
+            if (_this.isInOfflineMode()) {
+                reject();
             }
-        };
-        xhr.onerror = function () {
-            _this.addToPendingReviewRequests(review);
-        };
-        xhr.send(JSON.stringify(review));
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', DBManager.DATABASE_URL + 'reviews/', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4) {
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        resolve();
+                    }
+                    else {
+                        reject();
+                    }
+                }
+            };
+            xhr.onerror = function () {
+                reject();
+            };
+            xhr.send(JSON.stringify(review));
+        });
     };
-    DBManager.prototype.addToPendingReviewRequests = function (review) {
+    DBManager.prototype.sendFavourite = function (favourite) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            if (_this.isInOfflineMode()) {
+                reject();
+            }
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', DBManager.DATABASE_URL + 'restaurants/' + favourite.restaurantId +
+                '/?is_favorite=' + favourite.favourite, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4) {
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        resolve();
+                    }
+                    else {
+                        reject();
+                    }
+                }
+            };
+            xhr.onerror = function () {
+                reject();
+            };
+            xhr.send();
+        });
+    };
+    DBManager.prototype.addToPendingReviewRequests = function (pendingRequest) {
         this.dbPromise.then(function (db) {
             db.transaction('pendingReviewRequests', 'readwrite')
                 .objectStore('pendingReviewRequests')
-                .put(review);
+                .put(pendingRequest);
         });
+        this.tellServiceWorkerToFulfill();
+    };
+    DBManager.prototype.tellServiceWorkerToFulfill = function () {
+        var messageChannel = new MessageChannel();
+        messageChannel.port1.onmessage = function (event) {
+            if (event.data.error) {
+                console.log(event.data.error);
+            }
+            else {
+                console.log(event.data);
+            }
+        };
+        navigator.serviceWorker.controller
+            .postMessage('fullFillPendingRequests', [messageChannel.port2]);
     };
     DBManager.prototype.retryPendingReviewRequests = function () {
         var _this = this;
@@ -399,14 +488,20 @@ var DBManager = /** @class */ (function () {
             db.transaction('pendingReviewRequests')
                 .objectStore('pendingReviewRequests')
                 .getAll()
-                .then(function (reviews) {
+                .then(function (requests) {
                 db.transaction('pendingReviewRequests', 'readwrite')
                     .objectStore('pendingReviewRequests')
                     .clear();
-                reviews.forEach(function (review) { return _this.sendReview(review); });
+                requests.forEach(function (request) {
+                    if (request.request === 'review') {
+                        _this.sendReview(request.review);
+                    }
+                    if (request.request === 'favourite') {
+                        _this.sendFavourite(request.favourite);
+                    }
+                });
             });
         });
-        window.setTimeout(this.retryPendingReviewRequests.bind(this), 3000);
     };
     DBManager.prototype.isFavouriteRestaurant = function (restaurantId) {
         return this.dbPromise.then(function (db) {
@@ -417,29 +512,47 @@ var DBManager = /** @class */ (function () {
     };
     DBManager.prototype.changeFavouriteState = function (restaurantId) {
         return __awaiter(this, void 0, void 0, function () {
+            var favourite;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.dbPromise.then(function (db) {
-                            return db.transaction('favourite')
-                                .objectStore('favourite')
-                                .get(restaurantId).then(function (r) {
-                                _this.dbPromise.then(function (db) {
-                                    if (r) {
-                                        db.transaction('favourite', 'readwrite')
-                                            .objectStore('favourite')
-                                            .put(false, restaurantId);
-                                    }
-                                    else {
-                                        db.transaction('favourite', 'readwrite')
-                                            .objectStore('favourite')
-                                            .put(true, restaurantId);
-                                    }
+                    case 0:
+                        favourite = false;
+                        return [4 /*yield*/, this.dbPromise.then(function (db) {
+                                return db.transaction('favourite')
+                                    .objectStore('favourite')
+                                    .get(restaurantId).then(function (r) {
+                                    _this.dbPromise.then(function (db) {
+                                        if (r) {
+                                            db.transaction('favourite', 'readwrite')
+                                                .objectStore('favourite')
+                                                .put(false, restaurantId);
+                                        }
+                                        else {
+                                            db.transaction('favourite', 'readwrite')
+                                                .objectStore('favourite')
+                                                .put(true, restaurantId);
+                                            favourite = true;
+                                        }
+                                    });
                                 });
-                            });
-                        })];
+                            })];
                     case 1:
                         _a.sent();
+                        this.sendFavourite({
+                            restaurantId: restaurantId,
+                            favourite: favourite
+                        }).then(function () {
+                            console.log('send successful');
+                        }).catch(function () {
+                            _this.addToPendingReviewRequests({
+                                request: 'favourite',
+                                favourite: {
+                                    restaurantId: restaurantId,
+                                    favourite: favourite
+                                }
+                            });
+                        });
                         return [2 /*return*/];
                 }
             });
@@ -500,10 +613,23 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var Main = /** @class */ (function () {
     function Main() {
         this.dbManager = new __WEBPACK_IMPORTED_MODULE_0__dbManager__["a" /* DBManager */]();
-        this.fillNeighborhoodsHTML();
-        this.fillCuisinesHTML();
-        this.fillRestaurantsHTML();
+        this.fillHTML();
     }
+    Main.prototype.fillHTML = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.dbManager.refreshDB()];
+                    case 1:
+                        _a.sent();
+                        this.fillNeighborhoodsHTML();
+                        this.fillCuisinesHTML();
+                        this.fillRestaurantsHTML();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     Main.prototype.fillNeighborhoodsHTML = function () {
         return __awaiter(this, void 0, void 0, function () {
             var select;
@@ -987,8 +1113,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 
 var Restaurant = /** @class */ (function () {
     function Restaurant() {
-        this.dbManager = new __WEBPACK_IMPORTED_MODULE_0__dbManager__["a" /* DBManager */]();
-        this.loadRestaurant();
+        this.dbManager = __WEBPACK_IMPORTED_MODULE_0__dbManager__["a" /* DBManager */].getInstance();
     }
     Restaurant.prototype.loadRestaurant = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -999,12 +1124,19 @@ var Restaurant = /** @class */ (function () {
                         id = parseInt(this.getParameterByName('id'), 10);
                         if (!id) { // no id found in URL
                             console.error('No restaurant id in URL');
+                            window.location.href = 'index.html';
                             return [2 /*return*/];
                         }
+                        return [4 /*yield*/, this.dbManager.refreshDB()];
+                    case 1:
+                        _b.sent();
                         _a = this;
                         return [4 /*yield*/, this.dbManager.getRestaurantDetail(id)];
-                    case 1:
+                    case 2:
                         _a.restaurant = _b.sent();
+                        if (!this.restaurant) {
+                            window.location.href = 'index.html';
+                        }
                         addMarkersToMap([this.restaurant]);
                         this.fillRestaurantHTML();
                         this.fillBreadcrumb();
@@ -1172,14 +1304,13 @@ var Restaurant = /** @class */ (function () {
         return li;
     };
     Restaurant.prototype.fillBreadcrumb = function () {
-        var breadcrumb = document.querySelector('#breadcrumb ul');
-        var li = document.createElement('li');
+        var li = document.querySelector('#restaurant_title');
         var currentPage = document.createElement('a');
         currentPage.innerHTML = this.restaurant.name;
         currentPage.setAttribute('aria-current', 'page');
         currentPage.href = '#';
+        li.innerHTML = '';
         li.appendChild(currentPage);
-        breadcrumb.appendChild(li);
     };
     Restaurant.getRestaurantSrcset = function (image) {
         var srcset = '';
